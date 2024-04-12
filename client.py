@@ -59,13 +59,14 @@ def main():
                 # Cria um diretório no servidor
                 directory_name = parts[1]
                 print(f"Creating directory '{directory_name}' on server...")
-                client_socket.recv(1024)
+                f = client_socket.recv(1024).decode()
+                print(f"{f}")
 
             elif action == "cd":
                 # Altera o diretório atual do cliente no servidor
                 directory_name = parts[1]
                 print(f"Changing directory to '{directory_name}' on server...")
-                client_socket.recv(1024)
+                f = client_socket.recv(1024)
 
             elif action == "pwd":
                 # Exibe o diretório atual do servidor

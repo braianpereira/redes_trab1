@@ -51,17 +51,29 @@ def handle_client(client_socket, current_dir):
                 directory_name = parts[1]
                 directory_path = os.path.join(current_dir, directory_name)
                 os.makedirs(directory_path, exist_ok=True)
-                print(f"Directory '{directory_name}' created.")
+                if os.path.isdir(directory_path):
+                    client_socket.send(f"Directory '{directory_name}' created.".encode())
+                else:
+                    client_socket.send(f"Directory '{directory_name}' not created.")
+                # print(f"Directory '{directory_name}' created.")
+
 
             elif action == "cd":
                 # Altera o diretório atual do servidor
                 directory_name = parts[1]
-                new_dir = os.path.join(current_dir, directory_name)
-                if os.path.isdir(new_dir):
-                    current_dir = new_dir
+
+                if directory_name == ".." or directory_name == "../":
+                    current_dir = os.path.dirname(current_dir)
                     client_socket.send(current_dir.encode())
                 else:
-                    client_socket.send(b'Directory not found')
+                    new_dir = os.path.join(current_dir, directory_name)
+
+                    if os.path.isdir(new_dir):
+                        current_dir = new_dir
+                        client_socket.send(current_dir.encode())
+
+                    else:
+                        client_socket.send(b'Directory not found')
 
             elif action == "pwd":
                 # Envia o diretório atual do servidor para o cliente
