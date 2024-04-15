@@ -32,19 +32,35 @@ def handle_client(client_socket, current_dir):
                         while data:
                             client_socket.send(data)
                             data = file.read(1024)
+
+                    client_socket.send("__EOF__".encode())
                 else:
                     client_socket.send(b'File not found')
 
+
+
             elif action == "put":
+
                 # Recebe o arquivo enviado pelo cliente e salva no servidor
-                file_name = parts[1]
+
+                file_name = client_socket.recv(1024).decode()
+
                 file_path = os.path.join(current_dir, file_name)
+
                 with open(file_path, 'wb') as file:
-                    data = client_socket.recv(1024)
-                    while data:
-                        file.write(data)
+                    while True:
                         data = client_socket.recv(1024)
-                print(f"File '{file_name}' uploaded successfully.")
+                        print(data)
+                        if data == b'':  # Verifica se a conexão foi fechada
+                            break
+                        if data.startswith(b'__EOF__'):  # Verifica se é o final do arquivo
+                            file.write(data[7:])
+                            break
+                        file.write(data)
+
+                # Envia a confirmação de que o arquivo foi recebido com sucesso
+
+                #client_socket.send(f"File '{file_name}' uploaded successfully.".encode())
 
             elif action == "mkdir":
                 # Cria um diretório no servidor
@@ -54,15 +70,13 @@ def handle_client(client_socket, current_dir):
                 if os.path.isdir(directory_path):
                     client_socket.send(f"Directory '{directory_name}' created.".encode())
                 else:
-                    client_socket.send(f"Directory '{directory_name}' not created.")
-                # print(f"Directory '{directory_name}' created.")
-
+                    client_socket.send(f"Directory '{directory_name}' not created.".encode())
 
             elif action == "cd":
                 # Altera o diretório atual do servidor
                 directory_name = parts[1]
 
-                if directory_name == ".." or directory_name == "../":
+                if directory_name == "..":
                     current_dir = os.path.dirname(current_dir)
                     client_socket.send(current_dir.encode())
                 else:
@@ -98,7 +112,6 @@ def main():
 
     if not os.path.isdir("arquivos"):
         os.makedirs("arquivos", exist_ok=True)
-        print("teste")
 
     # Cria um socket TCP/IP
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -118,6 +131,7 @@ def main():
             client_socket, addr = server_socket.accept()
             print(f"[*] Accepted connection from {addr[0]}:{addr[1]}")
 
+            #handle_client(client_socket, current_dir)
             # Cria uma nova thread para lidar com o cliente
             client_handler = threading.Thread(target=handle_client, args=(client_socket, current_dir))
             client_handler.start()
